@@ -1,0 +1,10 @@
+version: 2
+sources:
+  - name: shop
+    description: Raw exports from the online shop, loaded exactly as delivered (every column as text).
+    schema: raw
+    tables:
+      - name: orders
+        description: One row per order line in the daily export file. Can contain repeated rows if an export batch is written twice.
+      - name: customers
+        description: One row per customer.

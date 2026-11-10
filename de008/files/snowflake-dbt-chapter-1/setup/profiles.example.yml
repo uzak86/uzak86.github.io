@@ -1,0 +1,16 @@
+# ~/.dbt/profiles.yml (outside the project folder; never committed).
+# Account and user are blurred on screen. The private key file and any passphrase live outside the project.
+shop_analytics:
+  target: dev
+  outputs:
+    dev:
+      type: snowflake
+      account: "{{ env_var('SNOWFLAKE_ACCOUNT') }}"
+      user: "{{ env_var('SNOWFLAKE_USER') }}"
+      private_key_path: "{{ env_var('SNOWFLAKE_PRIVATE_KEY_PATH') }}"
+      # if your key is encrypted, also set private_key_passphrase from an environment variable
+      role: transformer
+      database: shop_dev
+      warehouse: transform_wh
+      schema: dbt_dev
+      threads: 4

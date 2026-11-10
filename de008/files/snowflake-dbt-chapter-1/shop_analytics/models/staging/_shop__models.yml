@@ -1,0 +1,28 @@
+version: 2
+models:
+  - name: stg_shop__customers
+    description: Customers, one row per customer_id, typed.
+    columns:
+      - name: customer_id
+        data_tests:
+          - unique
+          - not_null
+  - name: stg_shop__orders
+    description: Orders, one row per order_id, typed; status lower-cased; repeated export rows removed.
+    columns:
+      - name: order_id
+        data_tests:
+          - unique
+          - not_null
+      - name: customer_id
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_shop__customers')
+                field: customer_id
+      - name: order_status
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['completed', 'refunded', 'cancelled']

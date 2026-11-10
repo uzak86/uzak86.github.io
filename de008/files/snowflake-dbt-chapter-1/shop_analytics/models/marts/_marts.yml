@@ -1,0 +1,9 @@
+version: 2
+models:
+  - name: fct_daily_revenue
+    description: One row per calendar day of orders; completed revenue and refunded value in GBP.
+    columns:
+      - name: order_date
+        data_tests:
+          - unique
+          - not_null

@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en-GB"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Snowflake + dbt build-along: chapter 1 files</title>
+<style>body{font-family:system-ui,-apple-system,Segoe UI,sans-serif;max-width:760px;margin:48px auto;padding:0 16px;line-height:1.6;color:#1a1a1a;background:#fff}h1{font-size:1.6rem}h2{font-size:1.2rem;margin-top:2rem}a{color:#0b5cad}code,pre{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.9rem}pre{background:#f4f5f7;padding:12px;overflow-x:auto;border-radius:6px}li{margin:.2rem 0}.note{background:#fff8e1;padding:10px 12px;border-radius:6px}</style></head>
+<body>
+<h1>Snowflake + dbt build-along: chapter 1 files</h1>
+<p>Everything you need to follow chapter 1: raw CSV to a tested daily revenue mart. The data is synthetic: 500 customers and 5,000 orders in October 2026, with 12 orders written twice (5,012 rows) and 60 rows whose status is not lower case. No real people or companies.</p>
+<p><strong><a href="files/snowflake-dbt-chapter-1.zip">Download everything (zip)</a></strong></p>
+
+<h2>What's in it</h2>
+<ul>
+<li><a href="files/snowflake-dbt-chapter-1/data/orders.csv">data/orders.csv</a> and <a href="files/snowflake-dbt-chapter-1/data/customers.csv">data/customers.csv</a>: the two raw files. To recreate them, run <a href="files/snowflake-dbt-chapter-1/tests/make_data.py">tests/make_data.py</a> (Python 3, seeded, so you get the same files).</li>
+<li><a href="files/snowflake-dbt-chapter-1/setup/01_snowflake_setup.sql">setup/01_snowflake_setup.sql</a>: warehouse, database, raw tables and the <code>transformer</code> role. Run it once in a Snowsight worksheet as ACCOUNTADMIN.</li>
+<li><a href="files/snowflake-dbt-chapter-1/setup/02_check_raw_load.sql">setup/02_check_raw_load.sql</a>: the four checks after loading the CSVs with Snowsight's Load Data dialog (header line treated as the header).</li>
+<li><a href="files/snowflake-dbt-chapter-1/setup/profiles.example.yml">setup/profiles.example.yml</a>: the dbt profile. Copy it to <code>~/.dbt/profiles.yml</code>, outside the project.</li>
+<li><code>shop_analytics/</code> (in the zip): the dbt project as it is at the end of the chapter: <a href="files/snowflake-dbt-chapter-1/shop_analytics/models/staging/stg_shop__orders.sql">fixed staging model</a>, <a href="files/snowflake-dbt-chapter-1/shop_analytics/models/marts/fct_daily_revenue.sql">mart</a>, <a href="files/snowflake-dbt-chapter-1/shop_analytics/tests/assert_daily_revenue_reconciles_to_raw.sql">reconciliation test</a> and the YAML tests.</li>
+<li><a href="files/snowflake-dbt-chapter-1/first-draft/stg_shop__orders.sql">first-draft/stg_shop__orders.sql</a>: the first-draft staging model. Put it in place of <code>models/staging/stg_shop__orders.sql</code> to see the two failing tests from the first build.</li>
+</ul>
+
+<h2>Before dbt can connect: key-pair sign-in</h2>
+<p>The profile signs in with a key pair, so set one up once. Snowflake's guide: <a href="https://docs.snowflake.com/en/user-guide/key-pair-auth">Key-pair authentication and key-pair rotation</a>.</p>
+<ol>
+<li>Make a private key and its public key on your own computer, in a folder outside the project:
+<pre>openssl genrsa 2048 | openssl pkcs8 -topk8 -inform PEM -out rsa_key.p8 -nocrypt
+openssl rsa -in rsa_key.p8 -pubout -out rsa_key.pub</pre>
+(<code>-nocrypt</code> leaves the key unencrypted, which is fine for a trial; drop it to set a passphrase, then add <code>private_key_passphrase</code> to the profile from an environment variable.)</li>
+<li>In a Snowsight worksheet, register the public key on your user. Paste the key text from <code>rsa_key.pub</code> without the BEGIN and END lines:
+<pre>set my_user = '"' || current_user() || '"';
+alter user identifier($my_user) set rsa_public_key = 'MIIBIjANBgkqh...';</pre></li>
+<li>Set the environment variables the profile reads: <code>SNOWFLAKE_ACCOUNT</code> (your account identifier), <code>SNOWFLAKE_USER</code> (your login name) and <code>SNOWFLAKE_PRIVATE_KEY_PATH</code> (the full path to <code>rsa_key.p8</code>).</li>
+<li>Check the connection from the project folder with <code>dbt debug</code>, then run <code>dbt build</code>.</li>
+</ol>
+<p class="note">Never commit the private key or put it in the project folder. Tested with dbt Core 1.12.6 and dbt-snowflake 1.11.6 (<code>pip install "dbt-core==1.12.6" "dbt-snowflake&gt;=1.11,&lt;1.12"</code>, Python 3.10 or newer).</p>
+
+<h2>What you should see</h2>
+<ul>
+<li>First draft: <code>PASS=7 ERROR=2 SKIP=4</code>. The unique test on order_id fails with 12, accepted_values on status fails with 5, and the mart and its tests are skipped.</li>
+<li>Fixed: <code>PASS=13</code>, 5,000 staging rows, 31 daily rows, completed revenue £542,066.86. The naive sum on the raw table is £537,191.71.</li>
+</ul>
+<p><a href="../">Home</a></p>
+</body></html>
